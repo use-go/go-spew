@@ -98,6 +98,9 @@ type ConfigState struct {
 	// be spewed to strings and sorted by those strings.  This is only
 	// considered if SortKeys is true.
 	SpewKeys bool
+
+	// K8sImports adds package and imports
+	K8sImports bool
 }
 
 // Config is the active configuration of the top-level functions.

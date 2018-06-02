@@ -18,9 +18,9 @@ package spew
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"reflect"
 	"regexp"
@@ -121,31 +121,26 @@ func (d *dumpState) dumpPtr(v reflect.Value) {
 			ve = ve.Elem()
 		}
 	}
+	if nilFound {
+		d.w.Write([]byte("nil"))
+		return
+	}
 
+	addressable := Addressable(ve)
 	// Display type information.
-	d.w.Write(openParenBytes)
-	d.w.Write(bytes.Repeat(asteriskBytes, indirects))
-	d.w.Write([]byte(ve.Type().String()))
-	d.w.Write(closeParenBytes)
-
-	// Display pointer information.
-	if !d.cs.DisablePointerAddresses && len(pointerChain) > 0 {
-		d.w.Write(openParenBytes)
-		for i, addr := range pointerChain {
-			if i > 0 {
-				d.w.Write(pointerChainBytes)
-			}
-			printHexPtr(d.w, addr)
+	if !addressable {
+		fn := fmt.Sprintf("func(x %s) *%s {return &x }(", ve.Type().String(), ve.Type().String())
+		d.w.Write([]byte(fn))
+	} else {
+		if d.depth == 0 {
+			d.w.Write([]byte("var _ = "))
 		}
-		d.w.Write(closeParenBytes)
+		d.w.Write(bytes.Repeat(amperBytes, indirects))
+		d.w.Write([]byte(k8sType(ve)))
 	}
 
 	// Display dereferenced value.
-	d.w.Write(openParenBytes)
 	switch {
-	case nilFound:
-		d.w.Write(nilAngleBytes)
-
 	case cycleFound:
 		d.w.Write(circularBytes)
 
@@ -153,7 +148,9 @@ func (d *dumpState) dumpPtr(v reflect.Value) {
 		d.ignoreNextType = true
 		d.dump(ve)
 	}
-	d.w.Write(closeParenBytes)
+	if !addressable {
+		d.w.Write(closeParenBytes)
+	}
 }
 
 // dumpSlice handles formatting of arrays and slices.  Byte (uint8 under
@@ -225,9 +222,9 @@ func (d *dumpState) dumpSlice(v reflect.Value) {
 
 	// Hexdump the entire slice as needed.
 	if doHexDump {
-		indent := strings.Repeat(d.cs.Indent, d.depth)
-		str := indent + hex.Dump(buf)
-		str = strings.Replace(str, "\n", "\n"+indent, -1)
+		//indent := strings.Repeat(d.cs.Indent, d.depth)
+		//str := indent + hex.Dump(buf)
+		str := "`" + string(buf) + "`"
 		str = strings.TrimRight(str, d.cs.Indent)
 		d.w.Write([]byte(str))
 		return
@@ -236,11 +233,7 @@ func (d *dumpState) dumpSlice(v reflect.Value) {
 	// Recursively call dump for each item.
 	for i := 0; i < numEntries; i++ {
 		d.dump(d.unpackValue(v.Index(i)))
-		if i < (numEntries - 1) {
-			d.w.Write(commaNewlineBytes)
-		} else {
-			d.w.Write(newlineBytes)
-		}
+		d.w.Write(commaNewlineBytes)
 	}
 }
 
@@ -263,41 +256,40 @@ func (d *dumpState) dump(v reflect.Value) {
 		return
 	}
 
+	byteString := false
 	// Print type information unless already handled elsewhere.
 	if !d.ignoreNextType {
 		d.indent()
-		d.w.Write(openParenBytes)
-		d.w.Write([]byte(v.Type().String()))
-		d.w.Write(closeParenBytes)
-		d.w.Write(spaceBytes)
+		switch kind {
+		case reflect.Slice, reflect.Array:
+			vt := v.Index(0).Type().Kind()
+			if vt == reflect.Uint8 {
+				byteString = true
+				d.w.Write([]byte("[]byte"))
+			} else {
+				d.w.Write([]byte(k8sType(v)))
+			}
+		case reflect.Map:
+			d.w.Write([]byte(k8sType(v)))
+		case reflect.Interface, reflect.Struct:
+			if v.Type().String() == "resource.Quantity" && !d.isZero(v) && v.IsValid() {
+				strfunc := v.MethodByName("MarshalJSON")
+				if !d.isZero(strfunc) {
+					marshaled := strfunc.Call(nil)
+					octets := marshaled[0].Bytes()
+					quantity := fmt.Sprintf(`resource.MustParse(%s)`, string(octets))
+					d.w.Write([]byte(quantity))
+					byteString = true
+				}
+			} else {
+				d.w.Write([]byte(k8sType(v)))
+			}
+		}
+		if !byteString {
+			d.w.Write(spaceBytes)
+		}
 	}
 	d.ignoreNextType = false
-
-	// Display length and capacity if the built-in len and cap functions
-	// work with the value's kind and the len/cap itself is non-zero.
-	valueLen, valueCap := 0, 0
-	switch v.Kind() {
-	case reflect.Array, reflect.Slice, reflect.Chan:
-		valueLen, valueCap = v.Len(), v.Cap()
-	case reflect.Map, reflect.String:
-		valueLen = v.Len()
-	}
-	if valueLen != 0 || !d.cs.DisableCapacities && valueCap != 0 {
-		d.w.Write(openParenBytes)
-		if valueLen != 0 {
-			d.w.Write(lenEqualsBytes)
-			printInt(d.w, int64(valueLen), 10)
-		}
-		if !d.cs.DisableCapacities && valueCap != 0 {
-			if valueLen != 0 {
-				d.w.Write(spaceBytes)
-			}
-			d.w.Write(capEqualsBytes)
-			printInt(d.w, int64(valueCap), 10)
-		}
-		d.w.Write(closeParenBytes)
-		d.w.Write(spaceBytes)
-	}
 
 	// Call Stringer/error interfaces if they exist and the handle methods flag
 	// is enabled
@@ -337,13 +329,19 @@ func (d *dumpState) dump(v reflect.Value) {
 
 	case reflect.Slice:
 		if v.IsNil() {
-			d.w.Write(nilAngleBytes)
+			d.w.Write([]byte("nil"))
 			break
 		}
 		fallthrough
 
 	case reflect.Array:
-		d.w.Write(openBraceNewlineBytes)
+		openBytes := openBraceNewlineBytes
+		closeBytes := closeBraceBytes
+		if byteString {
+			openBytes = openParenBytes
+			closeBytes = closeParenBytes
+		}
+		d.w.Write(openBytes)
 		d.depth++
 		if (d.cs.MaxDepth != 0) && (d.depth > d.cs.MaxDepth) {
 			d.indent()
@@ -352,17 +350,25 @@ func (d *dumpState) dump(v reflect.Value) {
 			d.dumpSlice(v)
 		}
 		d.depth--
-		d.indent()
-		d.w.Write(closeBraceBytes)
+		if !byteString {
+			d.indent()
+		}
+		d.w.Write(closeBytes)
 
 	case reflect.String:
-		d.w.Write([]byte(strconv.Quote(v.String())))
-
+		str := v.String()
+		if strings.Contains(str, "\n") {
+			var re = regexp.MustCompile(`(?m)(\x60.*?\x60)`)
+			str = re.ReplaceAllString(str, "`+\"${1}\"+`")
+			d.w.Write([]byte("`" + str + "`"))
+		} else {
+			d.w.Write([]byte(strconv.Quote(str)))
+		}
 	case reflect.Interface:
 		// The only time we should get here is for nil interfaces due to
 		// unpackValue calls.
 		if v.IsNil() {
-			d.w.Write(nilAngleBytes)
+			d.w.Write([]byte("nil"))
 		}
 
 	case reflect.Ptr:
@@ -372,7 +378,7 @@ func (d *dumpState) dump(v reflect.Value) {
 	case reflect.Map:
 		// nil maps should be indicated as different than empty maps
 		if v.IsNil() {
-			d.w.Write(nilAngleBytes)
+			d.w.Write([]byte("nil"))
 			break
 		}
 
@@ -382,21 +388,16 @@ func (d *dumpState) dump(v reflect.Value) {
 			d.indent()
 			d.w.Write(maxNewlineBytes)
 		} else {
-			numEntries := v.Len()
 			keys := v.MapKeys()
 			if d.cs.SortKeys {
 				sortValues(keys, d.cs)
 			}
-			for i, key := range keys {
+			for _, key := range keys {
 				d.dump(d.unpackValue(key))
 				d.w.Write(colonSpaceBytes)
 				d.ignoreNextIndent = true
 				d.dump(d.unpackValue(v.MapIndex(key)))
-				if i < (numEntries - 1) {
-					d.w.Write(commaNewlineBytes)
-				} else {
-					d.w.Write(newlineBytes)
-				}
+				d.w.Write(commaNewlineBytes)
 			}
 		}
 		d.depth--
@@ -404,32 +405,34 @@ func (d *dumpState) dump(v reflect.Value) {
 		d.w.Write(closeBraceBytes)
 
 	case reflect.Struct:
-		d.w.Write(openBraceNewlineBytes)
-		d.depth++
-		if (d.cs.MaxDepth != 0) && (d.depth > d.cs.MaxDepth) {
-			d.indent()
-			d.w.Write(maxNewlineBytes)
-		} else {
-			vt := v.Type()
-			numFields := v.NumField()
-			for i := 0; i < numFields; i++ {
+		if v.Type().String() != "resource.Quantity" {
+			d.w.Write(openBraceNewlineBytes)
+			d.depth++
+			if (d.cs.MaxDepth != 0) && (d.depth > d.cs.MaxDepth) {
 				d.indent()
-				vtf := vt.Field(i)
-				d.w.Write([]byte(vtf.Name))
-				d.w.Write(colonSpaceBytes)
-				d.ignoreNextIndent = true
-				d.dump(d.unpackValue(v.Field(i)))
-				if i < (numFields - 1) {
+				d.w.Write(maxNewlineBytes)
+			} else {
+				vt := v.Type()
+				numFields := v.NumField()
+				for i := 0; i < numFields; i++ {
+					if d.isZero(v.Field(i)) {
+						continue
+					}
+
+					d.indent()
+					vtf := vt.Field(i)
+
+					d.w.Write([]byte(vtf.Name))
+					d.w.Write(colonSpaceBytes)
+					d.ignoreNextIndent = true
+					d.dump(d.unpackValue(v.Field(i)))
 					d.w.Write(commaNewlineBytes)
-				} else {
-					d.w.Write(newlineBytes)
 				}
 			}
+			d.depth--
+			d.indent()
+			d.w.Write(closeBraceBytes)
 		}
-		d.depth--
-		d.indent()
-		d.w.Write(closeBraceBytes)
-
 	case reflect.Uintptr:
 		printHexPtr(d.w, uintptr(v.Uint()))
 
@@ -451,19 +454,42 @@ func (d *dumpState) dump(v reflect.Value) {
 // fdump is a helper function to consolidate the logic from the various public
 // methods which take varying writers and config states.
 func fdump(cs *ConfigState, w io.Writer, a ...interface{}) {
+	imports := `package idpe
+
+import (
+    appsv1 "k8s.io/api/apps/v1"
+    corev1 "k8s.io/api/core/v1"
+    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/api/extensions/v1beta1"
+    "k8s.io/apimachinery/pkg/util/intstr"
+    "k8s.io/apimachinery/pkg/api/resource"
+)
+
+func init() {
+`
 	for _, arg := range a {
 		if arg == nil {
-			w.Write(interfaceBytes)
-			w.Write(spaceBytes)
-			w.Write(nilAngleBytes)
-			w.Write(newlineBytes)
+			/*
+				w.Write(interfaceBytes)
+				w.Write(spaceBytes)
+				w.Write([]byte("nil"))
+				w.Write(newlineBytes)
+			*/
 			continue
 		}
 
 		d := dumpState{w: w, cs: cs}
 		d.pointers = make(map[uintptr]int)
+		log.Printf(fmt.Sprintf("%v", cs.K8sImports))
+		if cs.K8sImports {
+			d.w.Write([]byte(imports))
+		}
 		d.dump(reflect.ValueOf(arg))
 		d.w.Write(newlineBytes)
+		if cs.K8sImports {
+			d.w.Write(closeBraceBytes)
+		}
 	}
 }
 
