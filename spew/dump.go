@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"reflect"
 	"regexp"
@@ -54,6 +53,7 @@ type dumpState struct {
 	pointers         map[uintptr]int
 	ignoreNextType   bool
 	ignoreNextIndent bool
+	imports          map[string]string
 	cs               *ConfigState
 }
 
@@ -75,6 +75,14 @@ func (d *dumpState) unpackValue(v reflect.Value) reflect.Value {
 		v = v.Elem()
 	}
 	return v
+}
+
+func (d *dumpState) addImport(pkgPath, alias string) {
+	var re = regexp.MustCompile(`(?m)^.*\/vendor\/`)
+	pkgPath = re.ReplaceAllString(pkgPath, "")
+	if _, ok := d.imports[pkgPath]; !ok {
+		d.imports[pkgPath] = alias
+	}
 }
 
 // dumpPtr handles formatting of pointers by indirecting them as necessary.
@@ -136,7 +144,7 @@ func (d *dumpState) dumpPtr(v reflect.Value) {
 			d.w.Write([]byte("var _ = "))
 		}
 		d.w.Write(bytes.Repeat(amperBytes, indirects))
-		d.w.Write([]byte(k8sType(ve)))
+		d.w.Write([]byte(k8sType(d, ve)))
 	}
 
 	// Display dereferenced value.
@@ -267,12 +275,13 @@ func (d *dumpState) dump(v reflect.Value) {
 				byteString = true
 				d.w.Write([]byte("[]byte"))
 			} else {
-				d.w.Write([]byte(k8sType(v)))
+				d.w.Write([]byte(k8sType(d, v)))
 			}
 		case reflect.Map:
-			d.w.Write([]byte(k8sType(v)))
+			d.w.Write([]byte(k8sType(d, v)))
 		case reflect.Interface, reflect.Struct:
 			if v.Type().String() == "resource.Quantity" && !d.isZero(v) && v.IsValid() {
+				d.addImport("k8s.io/apimachinery/pkg/api/resource", "")
 				strfunc := v.MethodByName("MarshalJSON")
 				if !d.isZero(strfunc) {
 					marshaled := strfunc.Call(nil)
@@ -282,7 +291,7 @@ func (d *dumpState) dump(v reflect.Value) {
 					byteString = true
 				}
 			} else {
-				d.w.Write([]byte(k8sType(v)))
+				d.w.Write([]byte(k8sType(d, v)))
 			}
 		}
 		if !byteString {
@@ -454,42 +463,49 @@ func (d *dumpState) dump(v reflect.Value) {
 // fdump is a helper function to consolidate the logic from the various public
 // methods which take varying writers and config states.
 func fdump(cs *ConfigState, w io.Writer, a ...interface{}) {
-	imports := `package idpe
+	imports := map[string]string{}
+	structs := []string{}
 
-import (
-    appsv1 "k8s.io/api/apps/v1"
-    corev1 "k8s.io/api/core/v1"
-    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	"k8s.io/api/extensions/v1beta1"
-    "k8s.io/apimachinery/pkg/util/intstr"
-    "k8s.io/apimachinery/pkg/api/resource"
-)
-
-func init() {
-`
 	for _, arg := range a {
+		var b strings.Builder
 		if arg == nil {
-			/*
-				w.Write(interfaceBytes)
-				w.Write(spaceBytes)
-				w.Write([]byte("nil"))
-				w.Write(newlineBytes)
-			*/
 			continue
 		}
+		d := dumpState{w: &b, cs: cs, imports: make(map[string]string)}
 
-		d := dumpState{w: w, cs: cs}
 		d.pointers = make(map[uintptr]int)
-		log.Printf(fmt.Sprintf("%v", cs.K8sImports))
-		if cs.K8sImports {
-			d.w.Write([]byte(imports))
-		}
+
 		d.dump(reflect.ValueOf(arg))
 		d.w.Write(newlineBytes)
-		if cs.K8sImports {
-			d.w.Write(closeBraceBytes)
+		for k, v := range d.imports {
+			imports[k] = v
 		}
+		structs = append(structs, b.String())
+	}
+
+	if cs.Pkg != "" {
+		w.Write([]byte(fmt.Sprintf("package %s\n\n", cs.Pkg)))
+	}
+
+	if len(imports) > 0 {
+		w.Write([]byte("import ("))
+		for pkg, alias := range imports {
+			if pkg == "" {
+				continue
+			}
+			if alias == "" {
+				w.Write([]byte("\n\t"))
+				w.Write([]byte(fmt.Sprintf(`"%s"`, pkg)))
+			} else {
+				w.Write([]byte("\n\t"))
+				w.Write([]byte(fmt.Sprintf(`%s "%s"`, alias, pkg)))
+			}
+		}
+		w.Write([]byte("\n)\n\n"))
+	}
+
+	for _, s := range structs {
+		w.Write([]byte(s))
 	}
 }
 

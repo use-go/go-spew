@@ -2,23 +2,27 @@ package spew
 
 import (
 	"fmt"
-	"log"
 	"path"
 	"reflect"
 	"strings"
 )
 
-func k8sType(v reflect.Value) string {
+func k8sType(d *dumpState, v reflect.Value) string {
 	typeStr := v.Type().String()
-	log.Printf(typeStr)
 	if strings.HasPrefix(typeStr, "v1.") {
-		k8sapi := path.Base(path.Dir(v.Type().PkgPath()))
+		pkgPath := v.Type().PkgPath()
+		k8sapi := path.Base(path.Dir(pkgPath))
 		typeStr = k8sapi + typeStr
+		d.addImport(pkgPath, k8sapi+"v1")
 
 	}
 	if strings.HasPrefix(typeStr, "[]v1.") {
-		k8sapi := path.Base(path.Dir(v.Index(0).Type().PkgPath()))
+		pkgPath := v.Index(0).Type().PkgPath()
+		k8sapi := path.Base(path.Dir(pkgPath))
+		d.addImport(pkgPath, k8sapi+"v1")
 		typeStr = strings.Replace(typeStr, "[]v1.", fmt.Sprintf("[]%sv1.", k8sapi), 1)
 	}
+	pkgPath := v.Type().PkgPath()
+	d.addImport(pkgPath, "")
 	return typeStr
 }
