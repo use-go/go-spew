@@ -20,7 +20,7 @@
 // for interfaces which make the implementation of unsafeReflectValue more complex.
 // +build !js,!appengine,!safe,!disableunsafe,go1.4
 
-package spew
+package kew
 
 import (
 	"reflect"

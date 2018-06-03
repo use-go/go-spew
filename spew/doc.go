@@ -208,4 +208,4 @@ detects them and handles them internally by printing the panic information
 inline with the output.  Since spew is intended to provide deep pretty printing
 capabilities on structures, it intentionally does not return any errors.
 */
-package spew
+package kew
