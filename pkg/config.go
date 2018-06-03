@@ -103,6 +103,19 @@ type ConfigState struct {
 	Pkg string
 }
 
+// NewConfig returns the a configuration to output k8s go structures.
+func NewConfig(pkg string) ConfigState {
+	return ConfigState{
+		Indent:                  "\t",
+		DisableMethods:          true,
+		DisablePointerMethods:   true,
+		DisablePointerAddresses: true,
+		DisableCapacities:       true,
+		ContinueOnMethod:        true,
+		Pkg:                     pkg,
+	}
+}
+
 // Config is the active configuration of the top-level functions.
 // The configuration can be changed by modifying the contents of spew.Config.
 var Config = ConfigState{Indent: " "}
