@@ -88,5 +88,6 @@ func output(src, pkg string, objs []runtime.Object) error {
 	structs := []string{}
 	structs = append(structs, converter.Sdump(dump...))
 	gofile := src + ".go"
+	fmt.Printf("writing to %s", gofile)
 	return ioutil.WriteFile(gofile, []byte(strings.Join(structs, "\n")), 0600)
 }
