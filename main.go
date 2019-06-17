@@ -9,10 +9,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/goller/kew/pkg"
+	kew "github.com/goller/kew/pkg"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
-
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -65,7 +66,11 @@ func parse(r *yaml.YAMLReader) ([]runtime.Object, error) {
 			return nil, err
 		}
 
-		d := scheme.Codecs.UniversalDeserializer()
+		sch := runtime.NewScheme()
+		scheme.AddToScheme(sch)
+		sch.AddKnownTypes(apiextensionsv1beta1.SchemeGroupVersion, &apiextensionsv1beta1.CustomResourceDefinition{})
+		d := serializer.NewCodecFactory(sch).UniversalDeserializer()
+
 		obj, _, err := d.Decode(doc, nil, nil)
 		if err != nil {
 			return nil, err
