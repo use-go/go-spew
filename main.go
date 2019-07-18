@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	kew "github.com/goller/kew/pkg"
+	istiov3 "github.com/weaveworks/flagger/pkg/apis/istio/v1alpha3"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -69,6 +70,7 @@ func parse(r *yaml.YAMLReader) ([]runtime.Object, error) {
 		sch := runtime.NewScheme()
 		scheme.AddToScheme(sch)
 		sch.AddKnownTypes(apiextensionsv1beta1.SchemeGroupVersion, &apiextensionsv1beta1.CustomResourceDefinition{})
+		sch.AddKnownTypes(istiov3.SchemeGroupVersion, &istiov3.VirtualService{}, &istiov3.DestinationRule{})
 		d := serializer.NewCodecFactory(sch).UniversalDeserializer()
 
 		obj, _, err := d.Decode(doc, nil, nil)

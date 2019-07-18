@@ -3,8 +3,11 @@ module github.com/goller/kew
 go 1.12
 
 require (
-	github.com/spf13/pflag v1.0.3 // indirect
-	k8s.io/apiextensions-apiserver v0.0.0-20190507064151-4af962e24e54
-	k8s.io/apimachinery v0.0.0-20190506225340-c4317b9d6635
-	k8s.io/client-go v0.0.0-20190501104856-ef81ee0960bf
+	github.com/grpc-ecosystem/grpc-gateway v1.5.0 // indirect
+	github.com/weaveworks/flagger v0.0.0-20190710064939-559cbd0d367a
+	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a // indirect
+	google.golang.org/appengine v1.5.0 // indirect
+	k8s.io/apiextensions-apiserver v0.0.0-20190717024431-604b51f5711b
+	k8s.io/apimachinery v0.0.0-20190717022731-0bb8574e0887
+	k8s.io/client-go v11.0.0+incompatible
 )
