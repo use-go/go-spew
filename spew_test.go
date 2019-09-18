@@ -23,7 +23,7 @@ import (
 	"os"
 	"testing"
 
-	"spew"
+	"github.com/LUSHDigital/spew"
 )
 
 // spewFunc is used to identify which public function of the spew package or
