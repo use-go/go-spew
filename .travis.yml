@@ -14,9 +14,5 @@ script:
 
 matrix:
   fast_finish: true
-  include:
-    - go: 1.12.x
-      env:
-        - GOMODULE111=on
   allow_failures:
     - go: tip
