@@ -10,3 +10,6 @@ script:
     - export GORACE="halt_on_error=1"
     - go test -v -race -tags safe ./spew
     - go test -v -race -tags testcgo ./spew -covermode=atomic -coverprofile=profile.cov
+
+env:
+  - GOMODULE111=on
