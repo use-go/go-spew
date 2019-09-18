@@ -3,7 +3,6 @@ go-spew
 
 [![Build Status](https://img.shields.io/travis/davecgh/go-spew.svg)](https://travis-ci.org/davecgh/go-spew)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
-[![Coverage Status](https://img.shields.io/coveralls/davecgh/go-spew.svg)](https://coveralls.io/r/davecgh/go-spew?branch=master)
 
 Go-spew implements a deep pretty printer for Go data structures to aid in
 debugging.  A comprehensive suite of tests with 100% test coverage is provided
@@ -18,20 +17,20 @@ post about it
 
 ## Documentation
 
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/davecgh/go-spew/spew)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/LUSHDigital/spew)
 
 Full `go doc` style documentation for the project can be viewed online without
 installing this package by using the excellent GoDoc site here:
-http://godoc.org/github.com/davecgh/go-spew/spew
+http://godoc.org/github.com/LUSHDigital/spew
 
 You can also view the documentation locally once the package is installed with
 the `godoc` tool by running `godoc -http=":6060"` and pointing your browser to
-http://localhost:6060/pkg/github.com/davecgh/go-spew/spew
+http://localhost:6060/pkg/github.com/LUSHDigital/spew
 
 ## Installation
 
 ```bash
-$ go get -u github.com/davecgh/go-spew/spew
+$ go get -u github.com/LUSHDigital/spew
 ```
 
 ## Quick Start
@@ -39,7 +38,7 @@ $ go get -u github.com/davecgh/go-spew/spew
 Add this import line to the file you're working in:
 
 ```Go
-import "github.com/davecgh/go-spew/spew"
+import "github.com/LUSHDigital/spew"
 ```
 
 To dump a variable with full newlines, indentation, type, and pointer
@@ -75,7 +74,7 @@ import (
     "html"
     "net/http"
 
-    "github.com/davecgh/go-spew/spew"
+    "github.com/LUSHDigital/spew"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
