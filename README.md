@@ -1,7 +1,7 @@
 go-spew
 =======
 
-[![Build Status](https://img.shields.io/travis/davecgh/go-spew.svg)](https://travis-ci.org/davecgh/go-spew)
+[![Build Status](https://img.shields.io/travis/LUSHDigital/spew.svg)](https://travis-ci.org/LUSHDigital/spew)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
 
 Go-spew implements a deep pretty printer for Go data structures to aid in
