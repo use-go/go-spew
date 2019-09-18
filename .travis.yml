@@ -6,18 +6,8 @@ go:
     - 1.13.x
     - tip
 sudo: false
-install:
-    - go get -v github.com/alecthomas/gometalinter
-    - gometalinter --install
 script:
     - export PATH=$PATH:$HOME/gopath/bin
     - export GORACE="halt_on_error=1"
-    - test -z "$(gometalinter --disable-all
-      --enable=gofmt
-      --enable=golint
-      --enable=vet
-      --enable=gosimple
-      --enable=unconvert
-      --deadline=4m ./spew | tee /dev/stderr)"
     - go test -v -race -tags safe ./spew
     - go test -v -race -tags testcgo ./spew -covermode=atomic -coverprofile=profile.cov
