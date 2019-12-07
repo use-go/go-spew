@@ -1040,3 +1040,37 @@ func TestDumpSortedKeys(t *testing.T) {
 	}
 
 }
+
+type x struct {
+	i int
+}
+
+func (val x) String() string {
+	return fmt.Sprintf("%d", val.i)
+}
+
+func checkStringer(obj interface{}) {
+	if _, ok := obj.(fmt.Stringer); !ok {
+		panic("not a Stringer!!")
+	}
+}
+
+func TestDumpSortedSpewedKeys(t *testing.T) {
+	type privateMap struct {
+		p map[interface{}]string
+	}
+	iface1 := x{1}
+	iface2 := x{2}
+	iface3 := x{3}
+	pMap := privateMap{p: map[interface{}]string{iface1: "1", iface3: "3", iface2: "2"}}
+	cfg := spew.ConfigState{SortKeys: true, SpewKeys: true}
+	s := cfg.Sdump(pMap)
+	expected := "(spew_test.privateMap) {\n" +
+		"p: (map[int]string) (len=3) {\n(int) 1: (string) (len=1) " +
+		"\"1\",\n(int) 2: (string) (len=1) \"2\",\n(int) 3: (string) " +
+		"(len=1) \"3\"\n" +
+		"}\n}\n"
+	if s != expected {
+		t.Errorf("Sorted+spewed keys mismatch:\n  %v %v", s, expected)
+	}
+}

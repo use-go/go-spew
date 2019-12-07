@@ -102,7 +102,7 @@ func unsafeReflectValue(v reflect.Value) reflect.Value {
 		return v
 	}
 	flagFieldPtr := flagField(&v)
-	*flagFieldPtr &^= flagRO | flagPrivate
+	*flagFieldPtr &^= flagRO | 0 //flagPrivate
 	*flagFieldPtr |= flagAddr
 	return v
 }
