@@ -23,6 +23,8 @@
 package spew
 
 import (
+	"fmt"
+	"math/bits"
 	"reflect"
 	"unsafe"
 )
@@ -46,6 +48,10 @@ var (
 	// flagAddr indicates whether the address of the reflect.Value's
 	// value may be taken.
 	flagAddr flag
+
+	// flagPrivate indicates whether the reflect.Value is exported
+	// or private.
+	flagPrivate flag
 )
 
 // flagKindMask holds the bits that make up the kind
@@ -89,13 +95,14 @@ func flagField(v *reflect.Value) *flag {
 //
 // This allows us to check for implementations of the Stringer and error
 // interfaces to be used for pretty printing ordinarily unaddressable and
-// inaccessible values such as unexported struct fields.
+// inaccessible values such as unexported struct fields. Turning off the
+// private flag also enables Spewkeys:true to work on private maps.
 func unsafeReflectValue(v reflect.Value) reflect.Value {
 	if !v.IsValid() || (v.CanInterface() && v.CanAddr()) {
 		return v
 	}
 	flagFieldPtr := flagField(&v)
-	*flagFieldPtr &^= flagRO
+	*flagFieldPtr &^= flagRO | flagPrivate
 	*flagFieldPtr |= flagAddr
 	return v
 }
@@ -127,6 +134,10 @@ func init() {
 	flagPublic := *flagField(&vA)
 	flagWithRO := *flagField(&va) | *flagField(&vt0)
 	flagRO = flagPublic ^ flagWithRO
+	flagPrivate = *flagField(&va) & ^flagPublic
+	if bits.OnesCount64(uint64(flagPrivate)) != 1 {
+		panic(fmt.Sprintf("flagPrivate=0x%0x, instead of having exactly one bit set as expected", flagPrivate))
+	}
 
 	// Infer flagAddr from the difference between a value
 	// taken from a pointer and not.
