@@ -67,7 +67,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/jcburley/go-spew/spew"
 )
 
 // dumpTest is used to describe a test to be performed against the Dump method.
@@ -1180,8 +1180,8 @@ func TestDumpSortedSpewedKeys(t *testing.T) {
 	cfg := spew.ConfigState{SortKeys: true, SpewKeys: true}
 	s := cfg.Sdump(pMap)
 	expected := "(spew_test.privateMap) {\n" +
-		"p: (map[int]string) (len=3) {\n(int) 1: (string) (len=1) " +
-		"\"1\",\n(int) 2: (string) (len=1) \"2\",\n(int) 3: (string) " +
+		"p: (map[interface {}]string) (len=3) {\n(spew_test.x) 1: (string) (len=1) " +
+		"\"1\",\n(spew_test.x) 2: (string) (len=1) \"2\",\n(spew_test.x) 3: (string) " +
 		"(len=1) \"3\"\n" +
 		"}\n}\n"
 	if s != expected {
