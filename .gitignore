@@ -21,3 +21,5 @@ _testmain.go
 
 *.exe
 *.orig
+vendor
+/.merge_file_*
