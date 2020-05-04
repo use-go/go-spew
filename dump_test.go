@@ -67,7 +67,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/LUSHDigital/spew"
+	"github.com/jcburley/go-spew/spew"
 )
 
 // dumpTest is used to describe a test to be performed against the Dump method.
@@ -1039,4 +1039,152 @@ func TestDumpSortedKeys(t *testing.T) {
 		t.Errorf("Sorted keys mismatch:\n  %v %v", s, expected)
 	}
 
+}
+
+func TestDumpDuplicatePointers(t *testing.T) {
+	cfg := spew.ConfigState{NoDuplicates: true}
+	type info struct {
+		a int
+		b int
+	}
+	type twice struct {
+		info1 *info
+		info2 *info
+		info3 *info
+	}
+	i1 := &info{a: 1, b: 2}
+	ip1 := fmt.Sprintf("%p", i1)
+	i2 := &info{a: 3, b: 4}
+	ip2 := fmt.Sprintf("%p", i2)
+	v := twice{info1: i1, info2: i2, info3: i1}
+	//	vt := "spew_test.twice"
+	s := cfg.Sdump(v)
+	expected := `(spew_test.twice) {
+info1: (*spew_test.info)(` + ip1 + `)({
+a: (int) 1,
+b: (int) 2
+}),
+info2: (*spew_test.info)(` + ip2 + `)({
+a: (int) 3,
+b: (int) 4
+}),
+info3: (*spew_test.info)(` + ip1 + `)(<already seen>)
+}
+`
+	if s != expected {
+		t.Errorf("Duplicate-pointers mismatch:\n  %v %v", s, expected)
+	}
+}
+
+func TestDumpOrdinals(t *testing.T) {
+	cfg := spew.ConfigState{UseOrdinals: true}
+	type info struct {
+		a int
+		b int
+	}
+	type twice struct {
+		info1 *info
+		info2 *info
+		info3 *info
+	}
+	i := &info{a: 1, b: 2}
+	v := twice{info1: i, info2: &info{a: 3, b: 4}, info3: i}
+	//	vt := "spew_test.twice"
+	s := cfg.Sdump(v)
+	expected := `(spew_test.twice) {
+info1: (*spew_test.info)(#1)({
+a: (int) 1,
+b: (int) 2
+}),
+info2: (*spew_test.info)(#2)({
+a: (int) 3,
+b: (int) 4
+}),
+info3: (*spew_test.info)(#1)({
+a: (int) 1,
+b: (int) 2
+})
+}
+`
+	if s != expected {
+		t.Errorf("Ordinals mismatch:\n  %v %v", s, expected)
+	}
+}
+
+func a() {
+}
+
+func b() {
+}
+
+func TestDumpDuplicateOrdinals(t *testing.T) {
+	cfg := spew.ConfigState{NoDuplicates: true, UseOrdinals: true}
+	type info struct {
+		a int
+		b int
+	}
+	type twice struct {
+		info1 *info
+		info2 *info
+		info3 *info
+		fn1   func()
+		fn2   func()
+		fn3   func()
+	}
+	i := &info{a: 1, b: 2}
+	v := twice{info1: i, info2: &info{a: 3, b: 4}, info3: i, fn1: a, fn2: b, fn3: a}
+	//	vt := "spew_test.twice"
+	s := cfg.Sdump(v)
+	expected := `(spew_test.twice) {
+info1: (*spew_test.info)(#1)({
+a: (int) 1,
+b: (int) 2
+}),
+info2: (*spew_test.info)(#2)({
+a: (int) 3,
+b: (int) 4
+}),
+info3: (*spew_test.info)(#1)(<already seen>),
+fn1: (func()) #3,
+fn2: (func()) #4,
+fn3: (func()) #3
+}
+`
+	if s != expected {
+		t.Errorf("Duplicate-pointers+ordinals mismatch:\n  %v %v", s, expected)
+	}
+}
+
+type x struct {
+	i int
+}
+
+func (val x) String() string {
+	return fmt.Sprintf("%d", val.i)
+}
+
+func checkStringer(obj interface{}) {
+	if _, ok := obj.(fmt.Stringer); !ok {
+		panic("not a Stringer!!")
+	}
+}
+
+func TestDumpSortedSpewedKeys(t *testing.T) {
+	type privateMap struct {
+		p map[interface{}]string
+	}
+	iface1 := x{1}
+	iface2 := x{2}
+	iface3 := x{3}
+	pMap := privateMap{p: map[interface{}]string{iface1: "1", iface3: "3", iface2: "2"}}
+	cfg := spew.ConfigState{SortKeys: true, SpewKeys: true}
+	s := cfg.Sdump(pMap)
+	expected := "(spew_test.privateMap) {\n" +
+		"p: (map[interface {}]string) (len=3) {\n(spew_test.x) 1: (string) (len=1) " +
+		"\"1\",\n(spew_test.x) 2: (string) (len=1) \"2\",\n(spew_test.x) 3: (string) " +
+		"(len=1) \"3\"\n" +
+		"}\n}\n"
+	if s != expected {
+		t.Errorf("Sorted+spewed keys mismatch:\n  %v %v", s, expected)
+	}
 }
