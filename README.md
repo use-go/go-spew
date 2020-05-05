@@ -8,10 +8,10 @@ Simply added IgnoreFieldByName(string) and IgnoreFieldByType(string) to suppress
 
 ## Update History
 
-Merged: https://github.com/LUSHDigital/spew
-Merged: https://github.com/goller/kew
-Merged: https://github.com/jcburley/go-spew
-Merged: https://github.com/klaxxon/go-spew
++ Merged: https://github.com/LUSHDigital/spew
++ Merged: https://github.com/goller/kew
++ Merged: https://github.com/jcburley/go-spew
++ Merged: https://github.com/klaxxon/go-spew
 
 ## Documentation
 
