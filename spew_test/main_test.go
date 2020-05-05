@@ -1,4 +1,4 @@
-package main
+package spew_test
 
 import (
 	"bufio"
@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"testing"
 
 	spew "github.com/use-go/go-spew/spew"
 	istiov3 "github.com/weaveworks/flagger/pkg/apis/istio/v1alpha3"
@@ -22,7 +23,7 @@ var (
 	pkg = flag.String("pkg", "k8s", "go package for output go file")
 )
 
-func main() {
+func TestMainSpew(t *testing.T) {
 	flag.Parse()
 	ymls := flag.Args()
 	if len(ymls) == 0 {
