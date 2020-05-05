@@ -1,4 +1,4 @@
-package kew
+package spew
 
 import (
 	"reflect"

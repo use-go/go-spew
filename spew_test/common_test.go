@@ -141,6 +141,7 @@ func helpTestSortValues(tests []sortTestCase, cs *spew.ConfigState, t *testing.T
 	}
 
 	for _, test := range tests {
+
 		spew.SortValues(test.input, cs)
 		// reflect.DeepEqual cannot really make sense of reflect.Value,
 		// probably because of all the pointer tricks. For instance,

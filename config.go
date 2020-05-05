@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 )
 
 // ConfigState houses the configuration options used by spew to format and
@@ -99,6 +100,11 @@ type ConfigState struct {
 	// considered if SortKeys is true.
 	SpewKeys bool
 
+	//see https://github.com/klaxxon/go-spew/blob/master/spew/config.go
+	// Name of fields to ignore
+	ignoreFieldByName map[string]bool
+	ignoreFieldByType map[string]bool
+
 	// NoDuplicates specifies that any given pointer should have
 	// its dereference dumped only once. This is similar to
 	// circularity detection, but applies to all pointers across a
@@ -122,6 +128,22 @@ type ConfigState struct {
 	// PreserveSpewState was true when that operation was started.
 	// Can be copied to a different ConfigState object.
 	SpewState SpewState
+
+	// Pkg is the package at the top of the file.
+	Pkg string
+}
+
+// NewConfig returns the a configuration to output k8s go structures.
+func NewConfig(pkg string) ConfigState {
+	return ConfigState{
+		Indent:                  "\t",
+		DisableMethods:          true,
+		DisablePointerMethods:   true,
+		DisablePointerAddresses: true,
+		DisableCapacities:       true,
+		ContinueOnMethod:        true,
+		Pkg:                     pkg,
+	}
 }
 
 // Config is the active configuration of the top-level functions.
@@ -327,4 +349,10 @@ func (c *ConfigState) convertArgs(args []interface{}) (formatters []interface{})
 // 	SortKeys: false
 func NewDefaultConfig() *ConfigState {
 	return &ConfigState{Indent: " "}
+}
+
+// SortValues makes the internal sortValues function available to the test
+// package.
+func SortValues(values []reflect.Value, cs *ConfigState) {
+	sortValues(values, cs)
 }

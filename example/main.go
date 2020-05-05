@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	kew "github.com/goller/kew/pkg"
+	spew "github.com/use-go/go-spew/spew"
 	istiov3 "github.com/weaveworks/flagger/pkg/apis/istio/v1alpha3"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -85,7 +85,8 @@ func parse(r *yaml.YAMLReader) ([]runtime.Object, error) {
 }
 
 func output(src, pkg string, objs []runtime.Object) error {
-	converter := kew.NewConfig(pkg)
+
+	converter := spew.NewConfig(pkg)
 
 	dump := make([]interface{}, len(objs))
 	for i := range objs {

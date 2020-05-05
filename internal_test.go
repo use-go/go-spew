@@ -76,9 +76,3 @@ func TestInvalidReflectValue(t *testing.T) {
 		t.Errorf("InvalidReflectValue #%d got: %s want: %s", i, s, want)
 	}
 }
-
-// SortValues makes the internal sortValues function available to the test
-// package.
-func SortValues(values []reflect.Value, cs *ConfigState) {
-	sortValues(values, cs)
-}

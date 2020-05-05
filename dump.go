@@ -55,6 +55,7 @@ type dumpState struct {
 	allPointers      map[uintptr]uintptr
 	ignoreNextType   bool
 	ignoreNextIndent bool
+	imports          map[string]string //see: https://github.com/goller/kew/blob/master/pkg/dump.go
 	cs               *ConfigState
 	nextOrdinal      uintptr
 }
@@ -77,6 +78,14 @@ func (d *dumpState) unpackValue(v reflect.Value) reflect.Value {
 		v = v.Elem()
 	}
 	return v
+}
+
+func (d *dumpState) addImport(pkgPath, alias string) {
+	var re = regexp.MustCompile(`(?m)^.*\/vendor\/`)
+	pkgPath = re.ReplaceAllString(pkgPath, "")
+	if _, ok := d.imports[pkgPath]; !ok {
+		d.imports[pkgPath] = alias
+	}
 }
 
 func (d *dumpState) isPointerSeen(addr uintptr) (seen bool, ordinal uintptr) {
