@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	spew "github.com/use-go/go-spew/spew"
+	"github.com/use-go/spew"
 	istiov3 "github.com/weaveworks/flagger/pkg/apis/istio/v1alpha3"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"

@@ -28,7 +28,7 @@ http://localhost:6060/pkg/github.com/use-go/spew
 ## Installation
 
 ```bash
-$ go get -u github.com/use-go/go-spew/spew
+$ go get -u github.com/use-go/spew
 ```
 
 ## Quick Start
@@ -36,7 +36,7 @@ $ go get -u github.com/use-go/go-spew/spew
 Add this import line to the file you're working in:
 
 ```Go
-import "github.com/use-go/go-spew/spew
+import "github.com/use-go/spew
 ```
 
 To dump a variable with full newlines, indentation, type, and pointer
