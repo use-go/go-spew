@@ -1,23 +1,29 @@
 go-spew
 =======
 
-[![Build Status](https://img.shields.io/travis/LUSHDigital/spew.svg)](https://travis-ci.org/LUSHDigital/spew)
+[![Build Status](https://img.shields.io/travis/use-go/spew.svg)](https://travis-ci.org/use-go/spew)
 [![ISC License](http://img.shields.io/badge/license-ISC-blue.svg)](http://copyfree.org)
 
 Simply added IgnoreFieldByName(string) and IgnoreFieldByType(string) to suppress dumps.  IgnoreFieldByType will also add []name and *name so pointers to and arrays of the speciified name are also ignored.
 
+## Update History
+
+Merged: https://github.com/use-go/spew
+Merged: https://github.com/goller/kew
+Merged: https://github.com/use-go/go-spew
+Merged: https://github.com/klaxxon/go-spew
 
 ## Documentation
 
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://godoc.org/github.com/LUSHDigital/spew)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](http://pkg.go.dev/github.com/use-go/spew)
 
 Full `go doc` style documentation for the project can be viewed online without
 installing this package by using the excellent GoDoc site here:
-http://godoc.org/github.com/LUSHDigital/spew
+http://pkg.go.dev/github.com/use-go/spew
 
 You can also view the documentation locally once the package is installed with
 the `godoc` tool by running `godoc -http=":6060"` and pointing your browser to
-http://localhost:6060/pkg/github.com/LUSHDigital/spew
+http://localhost:6060/pkg/github.com/use-go/spew
 
 ## Installation
 
@@ -30,7 +36,7 @@ $ go get -u github.com/use-go/go-spew/spew
 Add this import line to the file you're working in:
 
 ```Go
-import "github.com/use-go/go-spew/spew"
+import "github.com/use-go/go-spew/spew
 ```
 
 To dump a variable with full newlines, indentation, type, and pointer
@@ -66,7 +72,7 @@ import (
     "html"
     "net/http"
 
-    "github.com/LUSHDigital/spew"
+    "github.com/use-go/spew"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
